@@ -18,12 +18,20 @@ Usage:
     logger.addHandler(rollbar_handler)
 
 """
-import copy
 import logging
 import threading
-import time
 
 import rollbar
+
+
+class RollbarHandledFilter(logging.Filter):
+    """
+    Filter to ignore already handled rollbar messages
+    """
+    def filter(self, record):
+        if record.__dict__.get('rollbarHandled'):
+            return False
+        return True
 
 
 class RollbarHandler(logging.Handler):
@@ -36,12 +44,25 @@ class RollbarHandler(logging.Handler):
                  environment=None,
                  level=logging.INFO,
                  history_size=10,
-                 history_level=logging.DEBUG):
+                 history_level=logging.DEBUG,
+                 skipHandled=True,
+                 **kw):
+        """
+        skipHandled: Skip reporting of records that have already been handled by another RollbarHandler
+        """
+
+        self.rollbar = rollbar.Rollbar(
+            access_token=access_token,
+            environment=environment,
+            **kw
+        )
 
         logging.Handler.__init__(self)
+        if skipHandled:
+            self.addFilter(RollbarHandledFilter())
+        self.skipHandled = skipHandled
 
-        if access_token is not None:
-            rollbar.init(access_token, environment)
+        logging.Handler.__init__(self)
 
         self.notify_level = level
 
@@ -68,6 +89,8 @@ class RollbarHandler(logging.Handler):
         logging.Handler.setLevel(self, level)
 
     def emit(self, record):
+        record.rollbarHandled = True
+
         level = record.levelname.lower()
 
         if level not in self.SUPPORTED_LEVELS:
@@ -124,18 +147,17 @@ class RollbarHandler(logging.Handler):
                     }
                     payload_data = rollbar.dict_merge(payload_data, message_template)
 
-
-                uuid = rollbar.report_exc_info(exc_info,
-                                               level=level,
-                                               request=request,
-                                               extra_data=extra_data,
-                                               payload_data=payload_data)
+                uuid = self.rollbar.report_exc_info(exc_info,
+                                                    level=level,
+                                                    request=request,
+                                                    extra_data=extra_data,
+                                                    payload_data=payload_data)
             else:
-                uuid = rollbar.report_message(message,
-                                              level=level,
-                                              request=request,
-                                              extra_data=extra_data,
-                                              payload_data=payload_data)
+                uuid = self.rollbar.report_message(message,
+                                                   level=level,
+                                                   request=request,
+                                                   extra_data=extra_data,
+                                                   payload_data=payload_data)
         except:
             self.handleError(record)
         else:
