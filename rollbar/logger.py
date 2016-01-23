@@ -125,7 +125,7 @@ class RollbarHandler(logging.Handler):
 
         # after we've added the history data, check to see if the
         # notify level is satisfied
-        if record.levelno < self.notify_level:
+        if record.levelno < self.notify_level and not record.__dict__.get('rollbar'):
             return
 
         # Wait until we know we're going to send a report before trying to
