@@ -409,7 +409,6 @@ class Rollbar(object):
         if self.settings.get('handler') == 'agent':
             self.agent_log = self._create_agent_log()
 
-
     def report_exc_info(self, exc_info=None, request=None, extra_data=None, payload_data=None, level=None, **kw):
         """
         Reports an exception to Rollbar, using exc_info (from calling sys.exc_info())
@@ -671,9 +670,16 @@ class Rollbar(object):
         return data['uuid']
 
     def _check_config(self):
+
         if not self.settings.get('enabled'):
             log.info("pyrollbar: Not reporting because rollbar is disabled.")
             return False
+
+        # Check environment variable ROLLBAR_ENABLED
+        env = os.environ.get('ROLLBAR_ENABLED', 1)
+        if env in ['0', 'False']:
+            log.info("pyrollbar: Not reporting because rollbar is disabled via env var ROLLBAR_ENABLED")
+            return
 
         # make sure we have an access_token
         if not self.settings.get('access_token'):
