@@ -17,7 +17,7 @@ with open(INIT_PATH) as fd:
     VERSION = re.search(r"^__version__ = ['\"]([^'\"]+)['\"]", INIT_DATA, re.MULTILINE).group(1)
 
 setup(
-    name='rollbar',
+    name='mb-rollbar',
     packages=find_packages(),
     version=VERSION,
     entry_points= {
