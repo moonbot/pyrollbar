@@ -39,7 +39,7 @@ def main():
                       dest='endpoint_url',
                       help="The Rollbar API endpoint url to send data to.",
                       metavar='ENDPOINT_URL',
-                      default=rollbar.DEFAULT_ENDPOINT)
+                      default=rollbar.Rollbar.default_endpoint)
     parser.add_option('-m', '--handler',
                       dest='handler',
                       help="The method in which to report errors.",
